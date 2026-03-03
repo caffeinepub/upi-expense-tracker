@@ -7,33 +7,33 @@ const APP_GUIDES = [
     app: "Google Pay (GPay)",
     emoji: "🟢",
     steps: [
-      "Open GPay → tap your profile photo",
+      "Open GPay and tap your profile photo",
       'Go to "Manage Google Account" → Data & Privacy',
-      'Select "Download your data" (Google Takeout)',
-      "Choose Google Pay data and export as CSV or PDF",
-      "Upload the downloaded file here",
+      'Tap "Download your data" (Google Takeout)',
+      "Select Google Pay data and download as PDF",
+      "Upload the downloaded PDF here",
     ],
   },
   {
     app: "PhonePe",
     emoji: "🟣",
     steps: [
-      "Open PhonePe → tap the History icon",
-      "Tap the download/share icon at the top right",
-      'Select date range and choose "Download Statement"',
-      "The statement will be sent to your registered email as PDF or CSV",
-      "Upload the downloaded file here",
+      "Open PhonePe and tap the History icon",
+      "Tap the download icon at the top right",
+      'Select your date range and tap "Download Statement"',
+      "The PDF statement will be sent to your registered email",
+      "Download it from email and upload here",
     ],
   },
   {
     app: "Paytm",
     emoji: "🔵",
     steps: [
-      'Open Paytm → go to "Passbook"',
-      "Tap the filter/download icon",
-      'Select date range and tap "Download Statement"',
-      "Choose PDF or CSV format",
-      "Upload the downloaded file here",
+      'Open Paytm and go to "Passbook"',
+      "Tap the download icon at the top",
+      'Select your date range and tap "Download Statement"',
+      "Choose PDF format and download",
+      "Upload the downloaded PDF here",
     ],
   },
 ];
@@ -47,8 +47,8 @@ export default function ImportPage() {
           Import Transactions
         </h1>
         <p className="text-muted-foreground mt-1">
-          Upload your UPI transaction export to automatically categorize and
-          track your expenses.
+          Upload your UPI statement PDF to automatically categorize and track
+          your expenses.
         </p>
       </div>
 
@@ -77,31 +77,17 @@ export default function ImportPage() {
         <div className="flex items-center gap-2 mb-1">
           <FileText className="w-5 h-5 text-mint" />
           <h2 className="text-base font-semibold text-foreground">
-            Supported File Formats
+            Supported File Format
           </h2>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {[
-            {
-              ext: "CSV",
-              desc: "Comma-separated values export from any UPI app",
-            },
-            { ext: "TXT", desc: "Plain text transaction history files" },
-            {
-              ext: "PDF",
-              desc: "PDF statement exports from GPay, PhonePe, and Paytm",
-            },
-          ].map(({ ext, desc }) => (
-            <div
-              key={ext}
-              className="flex flex-col gap-1 p-3 rounded-xl bg-background border border-border"
-            >
-              <span className="text-xs font-bold text-mint tracking-widest">
-                .{ext}
-              </span>
-              <span className="text-xs text-muted-foreground">{desc}</span>
-            </div>
-          ))}
+        <div className="flex flex-col gap-1 p-4 rounded-xl bg-background border border-border">
+          <span className="text-xs font-bold text-mint tracking-widest">
+            .PDF
+          </span>
+          <span className="text-sm text-muted-foreground">
+            PDF statement downloaded directly from GPay, PhonePe, or Paytm.
+            Follow the guide below to get your statement.
+          </span>
         </div>
       </div>
 

@@ -282,8 +282,7 @@ export async function parsePDF(file: File): Promise<ParsedTransaction[]> {
   if (rawTxns.length === 0) {
     throw new Error(
       "No transactions could be found in this PDF. " +
-        "Supported formats: Google Pay, PhonePe, Paytm, and standard UPI bank statements. " +
-        "Tip: Try exporting as CSV from your app instead — CSV import works with all formats.",
+        "Please make sure you are uploading a statement downloaded directly from Google Pay, PhonePe, or Paytm.",
     );
   }
 
@@ -312,7 +311,7 @@ export async function parsePDF(file: File): Promise<ParsedTransaction[]> {
   if (parsed.length === 0) {
     throw new Error(
       "Transactions were detected but could not be parsed correctly (invalid dates or amounts). " +
-        "Please try exporting as CSV from your UPI app for better compatibility.",
+        "Please download a fresh statement directly from your UPI app and try again.",
     );
   }
 

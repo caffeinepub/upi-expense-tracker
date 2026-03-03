@@ -3,7 +3,6 @@ import {
   AlertCircle,
   CheckCircle,
   FileText,
-  Info,
   RefreshCw,
   Upload,
   X,
@@ -12,11 +11,7 @@ import type React from "react";
 import { useCallback, useState } from "react";
 import { useAddTransaction } from "../hooks/useQueries";
 import { ALL_CATEGORIES } from "../utils/categorizer";
-import {
-  type ParsedTransaction,
-  parseCSV,
-  readFileAsText,
-} from "../utils/csvParser";
+import type { ParsedTransaction } from "../utils/csvParser";
 import { parsePDF } from "../utils/pdfParser";
 
 interface TransactionImportProps {
@@ -47,18 +42,11 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
     setError(null);
 
     try {
-      let transactions: ParsedTransaction[];
-
-      if (file.name.toLowerCase().endsWith(".pdf")) {
-        transactions = await parsePDF(file);
-      } else {
-        const text = await readFileAsText(file);
-        transactions = parseCSV(text);
-      }
+      const transactions: ParsedTransaction[] = await parsePDF(file);
 
       if (transactions.length === 0) {
         setError(
-          "No transactions found in the file. Please check the file format and try again.",
+          "No transactions found in the PDF. Make sure this is a transaction statement directly downloaded from your UPI app and try again.",
         );
         setIsProcessing(false);
         return;
@@ -79,12 +67,12 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
 
   const handleFileSelect = useCallback(
     (file: File) => {
-      const validExtensions = [".csv", ".txt", ".pdf"];
       const fileName = file.name.toLowerCase();
-      const isValid = validExtensions.some((ext) => fileName.endsWith(ext));
 
-      if (!isValid) {
-        setError("Please upload a CSV, TXT, or PDF file.");
+      if (!fileName.endsWith(".pdf")) {
+        setError(
+          "Please upload a PDF file downloaded directly from your UPI app.",
+        );
         return;
       }
 
@@ -192,7 +180,7 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
           <input
             id="file-input"
             type="file"
-            accept=".csv,.txt,.pdf"
+            accept=".pdf"
             className="hidden"
             onChange={handleInputChange}
           />
@@ -217,7 +205,7 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
                 </p>
               </div>
               <p className="text-muted-foreground text-xs">
-                Supports CSV, TXT, and PDF
+                Supports PDF statements from GPay, PhonePe, and Paytm
               </p>
             </div>
           )}
@@ -245,18 +233,19 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
               </button>
             </div>
             {/* Tip for PDF errors */}
-            {error.toLowerCase().includes("pdf") ||
-            error.toLowerCase().includes("format") ? (
+            {(error.toLowerCase().includes("pdf") ||
+              error.toLowerCase().includes("format") ||
+              error.toLowerCase().includes("transaction")) && (
               <div className="flex items-start gap-2 pt-1 border-t border-destructive/20">
-                <Info className="w-4 h-4 text-mint shrink-0 mt-0.5" />
+                <FileText className="w-4 h-4 text-mint shrink-0 mt-0.5" />
                 <p className="text-muted-foreground text-xs">
-                  <span className="font-medium text-foreground">Tip:</span> For
-                  best results, export your transactions as CSV from your UPI
-                  app. PDF parsing works with digital statements from GPay,
-                  PhonePe, and Paytm — scanned/image PDFs are not supported.
+                  <span className="font-medium text-foreground">Tip:</span> Make
+                  sure you are uploading the statement PDF downloaded directly
+                  from your UPI app (GPay, PhonePe, or Paytm). Scanned or
+                  image-based PDFs are not supported.
                 </p>
               </div>
-            ) : null}
+            )}
           </div>
         )}
       </div>

@@ -18,14 +18,6 @@ export default defineConfig({
     emptyOutDir: true,
     sourcemap: false,
     minify: false,
-    rollupOptions: {
-      output: {
-        // Ensure pdfjs worker is handled correctly
-      },
-    },
-  },
-  worker: {
-    format: "es",
   },
   css: {
     postcss: "./postcss.config.js",
