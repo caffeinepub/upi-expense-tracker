@@ -1,0 +1,32 @@
+{
+  "kind": "spec_vs_diff_report",
+  "version": "1.0",
+  "generatedAt": "2026-03-02T10:43:11.680Z",
+  "summary": "The diff modifies TransactionImport.tsx and pdfParser.ts, but critically, pdfParser.ts still uses CDN-based dynamic loading (PDFJS_CDN and PDFJS_WORKER_CDN constants pointing to cdnjs.cloudflare.com) rather than replacing it with the bundled pdfjs-dist npm package. The core requirement of REQ-8 — replacing CDN-based dynamic import with a bundled npm package — is not implemented. The zero-transaction error message and TransactionImport routing improvements appear to be present.",
+  "missing_requirements": [
+    {
+      "id": "REQ-8",
+      "requirement": "Replace the CDN-based dynamic import with a bundled pdfjs-dist npm package so that PDF parsing works reliably client-side without network dependency.",
+      "reason": "The modified pdfParser.ts still contains PDFJS_CDN and PDFJS_WORKER_CDN constants pointing to cdnjs.cloudflare.com and dynamically injects a script tag to load PDF.js from CDN. There is no import from pdfjs-dist and no evidence of pdfjs-dist being installed as an npm dependency.",
+      "evidence": [
+        "frontend/src/utils/pdfParser.ts"
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "requirement": "Configure the PDF.js worker correctly using a local worker URL or disabling the worker to avoid worker initialization errors.",
+      "reason": "The worker is still configured via PDFJS_WORKER_CDN pointing to a remote CDN URL, not a local bundled worker. No local worker configuration or worker disabling is present.",
+      "evidence": [
+        "frontend/src/utils/pdfParser.ts"
+      ]
+    }
+  ],
+  "hallucinated_features": [],
+  "confidence": 0.85,
+  "changed_files": [
+    "frontend-file-summaries.txt",
+    "frontend/src/components/TransactionImport.tsx",
+    "frontend/src/utils/pdfParser.ts",
+    "project_state.json"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-fix-the-pdf-file-parsing-failure-in-the-transaction-import-flow-the-current-pdfparser-ts-dynamically-loads-pdfjs-from-cdn-which-is-unreliable-and-may-fail-due-to-network-issues-cdn-unavailability-cors-restrictions-or-worker-configuration-errors-replace-the-cdn-based-dynamic-import-with-a-bundled-pdfjs-dist-npm-package-configure-the-pdf-js-worker-correctly-e-g-using-a-local-worker-url-or-disabling-the-worker-for-small-files-so-that-pdf-parsing-works-reliably-client-side-without-network-dependency-ensure-the-parser-correctly-extracts-date-amount-and-merchant-description-fields-from-common-upi-export-pdf-formats-gpay-phonepe-paytm-statement-layouts-using-robust-regex-patterns-if-parsing-yields-zero-transactions-surface-a-descriptive-error-message-to-the-user-explaining-the-format-may-not-be-supported-rather-than-a-generic-failed-to-parse-file-error",
+      "featureTitle": "Fix the PDF file parsing failure in the transaction import flow. The current pdfParser.ts dynamically loads pdfjs from CDN, which is unreliable and may fail due to network issues, CDN unavailability, CORS restrictions, or worker configuration errors. Replace the CDN-based dynamic import with a bundled pdfjs-dist npm package. Configure the PDF.js worker correctly (e.g., using a local worker URL or disabling the worker for small files) so that PDF parsing works reliably client-side without network dependency. Ensure the parser correctly extracts date, amount, and merchant/description fields from common UPI export PDF formats (GPay, PhonePe, Paytm statement layouts) using robust regex patterns. If parsing yields zero transactions, surface a descriptive error message to the user explaining the format may not be supported rather than a generic 'failed to parse file' error.",
+      "files": [
+        "frontend/src/components/TransactionImport.tsx",
+        "frontend/src/utils/pdfParser.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-8"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

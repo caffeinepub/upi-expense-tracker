@@ -1,0 +1,37 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Fix PDF parsing failure in transaction import flow",
+  "requirements": [
+    {
+      "id": "REQ-8",
+      "summary": "Replace CDN-based pdfjs with bundled npm package, configure worker correctly, improve regex patterns for UPI PDF formats, and provide descriptive error messages for unsupported formats",
+      "acceptanceCriteria": [
+        "Uploading a valid UPI transaction PDF no longer shows 'failed to parse file' error",
+        "pdfjs-dist is installed as an npm dependency and loaded locally, not from CDN",
+        "The PDF.js worker is correctly configured to avoid worker initialization errors",
+        "Transactions (date, amount, merchant) are successfully extracted from common UPI PDF formats",
+        "If a PDF has an unrecognized format and yields zero transactions, a user-friendly message is shown explaining the limitation rather than a generic failure error",
+        "Parsed PDF transactions flow into the existing preview table and confirmation step as before",
+        "CSV/plain text import continues to work without regression"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/package.json",
+          "operation": "modify",
+          "description": "Add pdfjs-dist npm package as a dependency to replace the CDN-based dynamic import. This ensures PDF parsing capabilities are bundled with the application and do not rely on external network availability."
+        },
+        {
+          "path": "frontend/src/utils/pdfParser.ts",
+          "operation": "modify",
+          "description": "Replace the CDN-based dynamic import of pdfjs with a local npm import from pdfjs-dist. Configure the PDF.js worker using GlobalWorkerOptions.workerSrc pointing to a local worker file or disable worker for small files to avoid worker initialization errors. Enhance the regex patterns to correctly extract date, amount, and merchant/description fields from common UPI export PDF formats (GPay, PhonePe, Paytm statement layouts). Add robust error handling that distinguishes between parsing failures (network/worker errors) and unsupported format cases (zero transactions extracted). When zero transactions are found, return a descriptive error message explaining the format may not be supported instead of a generic failure message. Ensure the parser continues to return the same Transaction structure expected by TransactionImport component."
+        },
+        {
+          "path": "frontend/src/components/TransactionImport.tsx",
+          "operation": "modify",
+          "description": "Update error handling to display the descriptive error messages returned by pdfParser when a PDF format is not recognized or yields zero transactions. Ensure users receive clear feedback distinguishing between technical parsing failures and unsupported PDF formats. Verify that successfully parsed PDF transactions continue to flow into the existing preview table and confirmation workflow without regression."
+        }
+      ]
+    }
+  ]
+}

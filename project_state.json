@@ -1,0 +1,115 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 7,
+  "summary": "A privacy-first UPI expense tracker web app where users can connect their UPI app, view monthly expenses, and see them categorized (food, travel, entertainment, etc.). All data stays local/private and is never sent to any external server.",
+  "architectural_notes": [
+    "All UPI transaction data must remain local (client-side only) and never be transmitted to any external server.",
+    "Use client-side processing for expense categorization to ensure data privacy."
+  ],
+  "known_issues": [
+    "PDF file upload fails with 'failed to parse file' error after uploading a PDF for transaction import."
+  ],
+  "isFixRequest": true,
+  "existing_features": [
+    {
+      "id": "feature-build-a-transaction-import-flow-on-the-frontend-that-allows-users-to-upload-a-upi-transaction-export-file-csv-or-plain-text-from-apps-like-gpay-phonepe-paytm-parse-the-file-entirely-client-side-in-the-browser-never-send-raw-file-contents-to-the-backend-after-parsing-display-a-preview-table-and-let-the-user-confirm-before-saving-parsed-transactions-to-the-backend",
+      "title": "Build a transaction import flow on the frontend that allows users to upload a UPI transaction export file (CSV or plain text from apps like GPay, PhonePe, Paytm). Parse the file entirely client-side in the browser — never send raw file contents to the backend. After parsing, display a preview table and let the user confirm before saving parsed transactions to the backend.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-automatic-expense-categorization-on-the-frontend-when-parsing-transactions-classify-each-transaction-into-one-of-the-predefined-categories-food-dining-travel-transport-entertainment-shopping-health-medical-utilities-bills-transfers-and-other-based-on-keyword-matching-against-the-merchant-description-field",
+      "title": "Implement automatic expense categorization on the frontend. When parsing transactions, classify each transaction into one of the predefined categories — Food & Dining, Travel & Transport, Entertainment, Shopping, Health & Medical, Utilities & Bills, Transfers, and Other — based on keyword matching against the merchant/description field.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-a-monthly-expense-dashboard-page-that-shows-total-spend-for-the-selected-month-a-breakdown-of-spend-by-category-with-amounts-and-percentage-of-total-and-a-list-of-individual-transactions-filterable-by-category-allow-the-user-to-navigate-between-months",
+      "title": "Build a Monthly Expense Dashboard page that shows: total spend for the selected month, a breakdown of spend by category (with amounts and percentage of total), and a list of individual transactions filterable by category. Allow the user to navigate between months.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-require-internet-identity-login-to-access-all-features-of-the-app-show-a-landing-login-page-to-unauthenticated-users-that-explains-the-app-s-privacy-first-approach-after-login-show-the-dashboard-provide-a-logout-option-and-a-delete-all-my-data-button-in-settings",
+      "title": "Require Internet Identity login to access all features of the app. Show a landing/login page to unauthenticated users that explains the app's privacy-first approach. After login, show the dashboard. Provide a logout option and a 'Delete All My Data' button in settings.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-apply-a-clean-modern-finance-focused-visual-theme-across-the-entire-app-use-a-dark-charcoal-and-mint-green-color-palette-with-crisp-sans-serif-typography-use-card-based-layouts-for-the-dashboard-sections-subtle-animated-progress-bars-for-category-spend-visualization-and-a-minimal-top-navigation-bar-ensure-the-design-feels-trustworthy-and-data-forward",
+      "title": "Apply a clean, modern, finance-focused visual theme across the entire app. Use a dark-charcoal and mint-green color palette with crisp sans-serif typography. Use card-based layouts for the dashboard sections, subtle animated progress bars for category spend visualization, and a minimal top navigation bar. Ensure the design feels trustworthy and data-forward.",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-pdf-file-upload-support-to-the-transaction-import-flow-allow-users-to-upload-upi-transaction-export-files-in-pdf-format-in-addition-to-the-existing-csv-plain-text-support-parse-the-pdf-entirely-client-side-in-the-browser-using-a-client-side-pdf-parsing-library-never-send-the-raw-file-contents-to-the-backend-extract-transaction-data-date-amount-merchant-description-from-the-pdf-apply-automatic-category-classification-using-the-existing-categorizer-utility-and-feed-the-parsed-results-into-the-existing-preview-table-and-confirmation-flow-already-used-for-csv-imports",
+      "title": "Add PDF file upload support to the transaction import flow. Allow users to upload UPI transaction export files in PDF format (in addition to the existing CSV/plain text support). Parse the PDF entirely client-side in the browser using a client-side PDF parsing library — never send the raw file contents to the backend. Extract transaction data (date, amount, merchant/description) from the PDF, apply automatic category classification using the existing categorizer utility, and feed the parsed results into the existing preview table and confirmation flow already used for CSV imports.",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-pdf-file-parsing-failure-in-the-transaction-import-flow-the-current-pdfparser-ts-dynamically-loads-pdfjs-from-cdn-which-is-unreliable-and-may-fail-due-to-network-issues-cdn-unavailability-cors-restrictions-or-worker-configuration-errors-replace-the-cdn-based-dynamic-import-with-a-bundled-pdfjs-dist-npm-package-configure-the-pdf-js-worker-correctly-e-g-using-a-local-worker-url-or-disabling-the-worker-for-small-files-so-that-pdf-parsing-works-reliably-client-side-without-network-dependency-ensure-the-parser-correctly-extracts-date-amount-and-merchant-description-fields-from-common-upi-export-pdf-formats-gpay-phonepe-paytm-statement-layouts-using-robust-regex-patterns-if-parsing-yields-zero-transactions-surface-a-descriptive-error-message-to-the-user-explaining-the-format-may-not-be-supported-rather-than-a-generic-failed-to-parse-file-error",
+      "title": "Fix the PDF file parsing failure in the transaction import flow. The current pdfParser.ts dynamically loads pdfjs from CDN, which is unreliable and may fail due to network issues, CDN unavailability, CORS restrictions, or worker configuration errors. Replace the CDN-based dynamic import with a bundled pdfjs-dist npm package. Configure the PDF.js worker correctly (e.g., using a local worker URL or disabling the worker for small files) so that PDF parsing works reliably client-side without network dependency. Ensure the parser correctly extracts date, amount, and merchant/description fields from common UPI export PDF formats (GPay, PhonePe, Paytm statement layouts) using robust regex patterns. If parsing yields zero transactions, surface a descriptive error message to the user explaining the format may not be supported rather than a generic 'failed to parse file' error.",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "UPI app integration to fetch transaction data",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Monthly expense dashboard showing total spend",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Auto-categorization of expenses (food, travel, entertainment, etc.)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Privacy-first architecture: all data stays local, never sent externally",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Create a backend actor that stores user transaction data securely on-chain per user identity. Expose functions to: add a transaction (amount, merchant, timestamp, raw category hint), retrieve all transactions for the authenticated caller, delete all data for the caller, and compute a monthly expense summary grouped by category.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Support PDF file upload/import for UPI transaction data in addition to CSV/plain text",
+      "reqIds": [],
+      "status": "pending"
+    }
+  ],
+  "gameProjectType": "none",
+  "projectName": "UPI Expense Tracker",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

@@ -1,0 +1,45 @@
+{
+  "kind": "build_request",
+  "title": "Fix PDF parsing failure in transaction import flow",
+  "projectName": "UPI Expense Tracker",
+  "priority": "high",
+  "requirements": [
+    {
+      "id": "REQ-8",
+      "text": "Fix the PDF file parsing failure in the transaction import flow. The current pdfParser.ts dynamically loads pdfjs from CDN, which is unreliable and may fail due to network issues, CDN unavailability, CORS restrictions, or worker configuration errors. Replace the CDN-based dynamic import with a bundled pdfjs-dist npm package. Configure the PDF.js worker correctly (e.g., using a local worker URL or disabling the worker for small files) so that PDF parsing works reliably client-side without network dependency. Ensure the parser correctly extracts date, amount, and merchant/description fields from common UPI export PDF formats (GPay, PhonePe, Paytm statement layouts) using robust regex patterns. If parsing yields zero transactions, surface a descriptive error message to the user explaining the format may not be supported rather than a generic 'failed to parse file' error.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "After uploading pdf it shows failed to parse file"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Uploading a valid UPI transaction PDF no longer shows 'failed to parse file' error",
+        "pdfjs-dist is installed as an npm dependency and loaded locally, not from CDN",
+        "The PDF.js worker is correctly configured to avoid worker initialization errors",
+        "Transactions (date, amount, merchant) are successfully extracted from common UPI PDF formats",
+        "If a PDF has an unrecognized format and yields zero transactions, a user-friendly message is shown explaining the limitation rather than a generic failure error",
+        "Parsed PDF transactions flow into the existing preview table and confirmation step as before",
+        "CSV/plain text import continues to work without regression"
+      ]
+    }
+  ],
+  "constraints": [
+    "PDF must be parsed entirely client-side — never send raw file contents to the backend",
+    "Do not modify files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui",
+    "The fix must feed parsed results into the existing TransactionImport preview and confirmation flow"
+  ],
+  "nonGoals": [
+    "Adding new file format support beyond PDF and CSV",
+    "Server-side PDF processing",
+    "Changes to the backend data model or API",
+    "Redesigning the import UI"
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  }
+}

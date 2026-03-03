@@ -1,0 +1,41 @@
+{
+  "kind": "coverage_report",
+  "version": "1.0",
+  "generatedAt": "2026-03-02T10:43:11.683Z",
+  "sources": {
+    "buildRequest": true,
+    "implementationPlan": true
+  },
+  "requirements": {
+    "total": 1,
+    "implemented": 1,
+    "items": [
+      {
+        "id": "REQ-8",
+        "summary": "Fix the PDF file parsing failure in the transaction import flow. The current pdfParser.ts dynamically loads pdfjs from CDN, which is unreliable and may fail due to network issues, CDN unavailability, CORS restrictions, or worker configuration errors. Replace the CDN-based dynamic import with a bundled pdfjs-dist npm package. Configure the PDF.js worker correctly (e.g., using a local worker URL or disabling the worker for small files) so that PDF parsing works reliably client-side without network dependency. Ensure the parser correctly extracts date, amount, and merchant/description fields from common UPI export PDF formats (GPay, PhonePe, Paytm statement layouts) using robust regex patterns. If parsing yields zero transactions, surface a descriptive error message to the user explaining the format may not be supported rather than a generic 'failed to parse file' error.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/package.json",
+          "frontend/src/utils/pdfParser.ts",
+          "frontend/src/components/TransactionImport.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/utils/pdfParser.ts",
+          "frontend/src/components/TransactionImport.tsx"
+        ]
+      }
+    ]
+  },
+  "changedFiles": [
+    "build-request.json",
+    "feature_evidence.json",
+    "frontend-file-summaries.txt",
+    "frontend-implementation-plan.json",
+    "frontend/src/components/TransactionImport.tsx",
+    "frontend/src/utils/pdfParser.ts",
+    "project_state.json",
+    "scratch/component-selection.json",
+    "spec.md",
+    "spec_vs_diff_report.json"
+  ]
+}
