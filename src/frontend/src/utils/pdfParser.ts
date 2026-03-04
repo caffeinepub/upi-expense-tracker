@@ -1,24 +1,89 @@
 import { categorizeTransaction } from "./categorizer";
 import type { ParsedTransaction } from "./csvParser";
 
-// Use bundled pdfjs-dist instead of CDN to avoid network/browser restrictions
-async function extractTextFromPdf(file: File): Promise<string> {
-  // Dynamically import pdfjs-dist to avoid issues with worker setup at module load time
-  const pdfjsLib = await import("pdfjs-dist");
+// Dynamically load pdfjs-dist from CDN (avoids bundler/package dependency issues)
+let pdfjsLoadPromise: Promise<PdfjsLib> | null = null;
 
-  // Set worker source to the bundled worker
-  // Using a legacy worker approach that works in all environments
-  pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-    "pdfjs-dist/build/pdf.worker.min.js",
-    import.meta.url,
-  ).toString();
+interface PdfjsTextItem {
+  str: string;
+}
+
+interface PdfjsTextContent {
+  items: PdfjsTextItem[];
+}
+
+interface PdfjsPage {
+  getTextContent(): Promise<PdfjsTextContent>;
+}
+
+interface PdfjsPdf {
+  numPages: number;
+  getPage(pageNum: number): Promise<PdfjsPage>;
+}
+
+interface PdfjsLoadingTask {
+  promise: Promise<PdfjsPdf>;
+}
+
+interface PdfjsGetDocumentParams {
+  data: Uint8Array;
+  useWorkerFetch?: boolean;
+  isEvalSupported?: boolean;
+  useSystemFonts?: boolean;
+}
+
+interface PdfjsLib {
+  GlobalWorkerOptions: { workerSrc: string };
+  getDocument(params: PdfjsGetDocumentParams): PdfjsLoadingTask;
+}
+
+function loadPdfjsFromCDN(): Promise<PdfjsLib> {
+  if (pdfjsLoadPromise) return pdfjsLoadPromise;
+
+  pdfjsLoadPromise = new Promise<PdfjsLib>((resolve, reject) => {
+    // Check if already loaded
+    const win = window as Window & { pdfjsLib?: PdfjsLib };
+    if (win.pdfjsLib) {
+      resolve(win.pdfjsLib);
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src =
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+    script.onload = () => {
+      const lib = (window as Window & { pdfjsLib?: PdfjsLib }).pdfjsLib;
+      if (!lib) {
+        reject(new Error("pdfjs-dist failed to initialize after script load"));
+        return;
+      }
+      // Point the worker to CDN as well
+      lib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      resolve(lib);
+    };
+    script.onerror = () => {
+      reject(
+        new Error(
+          "Could not load PDF reader library. Please check your internet connection and try again.",
+        ),
+      );
+    };
+    document.head.appendChild(script);
+  });
+
+  return pdfjsLoadPromise;
+}
+
+// Extract raw text from a PDF file using pdfjs loaded from CDN
+async function extractTextFromPdf(file: File): Promise<string> {
+  const pdfjsLib = await loadPdfjsFromCDN();
 
   const arrayBuffer = await file.arrayBuffer();
   const uint8Array = new Uint8Array(arrayBuffer);
 
   const loadingTask = pdfjsLib.getDocument({
     data: uint8Array,
-    // Disable worker if it fails to load (fallback to main thread)
     useWorkerFetch: false,
     isEvalSupported: false,
     useSystemFonts: true,
@@ -30,9 +95,7 @@ async function extractTextFromPdf(file: File): Promise<string> {
   for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
     const page = await pdf.getPage(pageNum);
     const textContent = await page.getTextContent();
-    const pageText = textContent.items
-      .map((item: any) => ("str" in item ? item.str : ""))
-      .join(" ");
+    const pageText = textContent.items.map((item) => item.str).join(" ");
     fullText += `${pageText}\n`;
   }
 
@@ -166,15 +229,82 @@ function parsePhonePeFormat(text: string): RawTransaction[] {
   return results;
 }
 
-// Paytm statement patterns
+// Paytm statement patterns — handles both old and new Paytm PDF formats
 function parsePaytmFormat(text: string): RawTransaction[] {
   const results: RawTransaction[] = [];
 
-  // Paytm: "Jan 15, 2024 Paid to Swiggy ₹450"
-  const paytmPattern =
+  // --- New Paytm format (2024+) ---
+  // Paytm now directly provides bank-style PDFs.
+  // Format 1: "15 Jan 2024 ... merchant ... ₹450.00 ... Debit"
+  const paytmNew1 =
+    /(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})\s+([A-Za-z0-9\s\-_@./&]+?)\s+₹?\s*([\d,]+\.?\d*)\s*(?:Debit|DR|Dr|debit)?/gi;
+  for (const match of text.matchAll(paytmNew1)) {
+    const typeContext = text.slice(
+      match.index,
+      (match.index ?? 0) + match[0].length + 20,
+    );
+    const isCr =
+      /Credit|CR\b|Cr\b/i.test(typeContext) &&
+      !/Debit|DR\b|Dr\b/i.test(typeContext);
+    if (isCr) continue;
+    const merchant = match[2]
+      .trim()
+      .replace(/^(UPI[-\/]|Payment to|Paid to|Sent to|Transfer to)/i, "")
+      .trim();
+    if (merchant.length < 2) continue;
+    results.push({
+      date: match[1],
+      merchant,
+      amount: match[3],
+      type: "debit",
+    });
+  }
+
+  // Format 2: "15/01/2024 ... merchant ... ₹450" (new Paytm with slash dates)
+  const paytmNew2 =
+    /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})\s+([A-Za-z0-9\s\-_@./&]+?)\s+₹?\s*([\d,]+\.?\d*)\s*(?:Debit|DR|Dr)?/gi;
+  for (const match of text.matchAll(paytmNew2)) {
+    const typeContext = text.slice(
+      match.index,
+      (match.index ?? 0) + match[0].length + 20,
+    );
+    const isCr =
+      /Credit|CR\b|Cr\b/i.test(typeContext) &&
+      !/Debit|DR\b|Dr\b/i.test(typeContext);
+    if (isCr) continue;
+    const merchant = match[2]
+      .trim()
+      .replace(/^(UPI[-\/]|Payment to|Paid to|Sent to|Transfer to)/i, "")
+      .trim();
+    if (merchant.length < 2) continue;
+    results.push({
+      date: match[1],
+      merchant,
+      amount: match[3],
+      type: "debit",
+    });
+  }
+
+  // Format 3 (old Paytm): "Jan 15, 2024 Paid to Swiggy ₹450"
+  const paytmOld =
     /([A-Za-z]{3,9}\s+\d{1,2},?\s+\d{4})\s+(?:Paid to|Payment to|Sent to|Transfer to)?\s*([A-Za-z0-9\s\-_@.]+?)\s+₹\s*([\d,]+\.?\d*)/gi;
-  for (const match of text.matchAll(paytmPattern)) {
+  for (const match of text.matchAll(paytmOld)) {
     const merchant = match[2].trim();
+    if (merchant.length < 2) continue;
+    results.push({
+      date: match[1],
+      merchant,
+      amount: match[3],
+      type: "debit",
+    });
+  }
+
+  // Format 4: Paytm tabular format — lines like:
+  // "15-Jan-2024 UPI/merchant@bank 450.00 Debit"
+  const paytmTabular =
+    /(\d{1,2}-[A-Za-z]{3}-\d{2,4})\s+(?:UPI[\/\-])?([A-Za-z0-9\s\-_@./&]+?)\s+([\d,]+\.?\d{2})\s*(Debit|Debit\s|DR\b)?/gi;
+  for (const match of text.matchAll(paytmTabular)) {
+    const merchant = match[2].trim().split(/[@\/]/)[0].trim();
     if (merchant.length < 2) continue;
     results.push({
       date: match[1],
@@ -228,6 +358,80 @@ function parseGenericUPIFormat(text: string): RawTransaction[] {
   return results;
 }
 
+// Last-resort broad scan: extract any line that has a date and a rupee amount
+// Works on any structured PDF including new Paytm/bank formats
+function parseBroadFallback(text: string): RawTransaction[] {
+  const results: RawTransaction[] = [];
+  const lines = text.split("\n");
+
+  // Date patterns we can recognise
+  const datePatterns = [
+    /\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})\b/, // DD/MM/YYYY or DD-MM-YYYY
+    /\b(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})\b/, // DD MMM YYYY
+    /\b(\d{1,2}-[A-Za-z]{3}-\d{2,4})\b/, // DD-MMM-YY
+    /\b([A-Za-z]{3,9}\s+\d{1,2},?\s+\d{4})\b/, // MMM DD, YYYY
+    /\b(\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})\b/, // YYYY-MM-DD
+  ];
+
+  // Amount pattern: ₹ or plain number with decimal in a debit context
+  const amountPattern = /₹\s*([\d,]+\.?\d*)|(?<!\d)([\d,]{1,8}\.\d{2})(?!\d)/;
+
+  for (const line of lines) {
+    // Skip obvious headers
+    if (
+      /^(date|description|merchant|narration|particulars|amount|balance|dr|cr|debit|credit|transaction|ref|utr|opening|closing|total|s\.?no)/i.test(
+        line.trim(),
+      )
+    )
+      continue;
+    if (line.trim().length < 8) continue;
+
+    // Detect credit-only lines (skip them)
+    const isCreditOnly =
+      /\b(credit|credited|CR)\b/i.test(line) &&
+      !/\b(debit|debited|DR)\b/i.test(line);
+    if (isCreditOnly) continue;
+
+    // Find a date
+    let foundDate: string | null = null;
+    for (const pat of datePatterns) {
+      const m = line.match(pat);
+      if (m) {
+        foundDate = m[1];
+        break;
+      }
+    }
+    if (!foundDate) continue;
+
+    // Find an amount
+    const amtMatch = line.match(amountPattern);
+    if (!amtMatch) continue;
+    const amount = (amtMatch[1] || amtMatch[2] || "").replace(/,/g, "");
+    const amtNum = Number.parseFloat(amount);
+    if (Number.isNaN(amtNum) || amtNum <= 0) continue;
+
+    // Extract merchant: whatever is between date and amount, stripped of UPI/ref noise
+    let merchant = line
+      .replace(foundDate, "")
+      .replace(amtMatch[0], "")
+      .replace(
+        /\b(UPI|IMPS|NEFT|RTGS|REF|UTR|TXN|ID|NO|Debit|Credit|DR|CR|Debited|Credited)\b[\s\/\-#]*[\dA-Za-z]*/gi,
+        " ",
+      )
+      .replace(/[₹\d,]+\.\d{2}/g, "")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+
+    // Clean leading/trailing punctuation
+    merchant = merchant.replace(/^[\s\-_\/.,|:]+|[\s\-_\/.,|:]+$/g, "").trim();
+    if (merchant.length < 2) continue;
+
+    results.push({ date: foundDate, merchant, amount, type: "debit" });
+  }
+
+  return results;
+}
+
 // Deduplicate transactions by date+amount+merchant
 function deduplicateTransactions(txns: RawTransaction[]): RawTransaction[] {
   const seen = new Set<string>();
@@ -244,8 +448,8 @@ export async function parsePDF(file: File): Promise<ParsedTransaction[]> {
 
   try {
     rawText = await extractTextFromPdf(file);
-  } catch (err: any) {
-    const msg = err?.message || "Unknown error";
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Unknown error";
     throw new Error(
       `Failed to read PDF file: ${msg}. Please make sure it is a valid, non-password-protected PDF.`,
     );
@@ -267,9 +471,10 @@ export async function parsePDF(file: File): Promise<ParsedTransaction[]> {
   const phonePe = parsePhonePeFormat(text);
   const paytm = parsePaytmFormat(text);
   const generic = parseGenericUPIFormat(text);
+  const broad = parseBroadFallback(text);
 
   // Use the parser that found the most results
-  const allResults = [gpay, phonePe, paytm, generic];
+  const allResults = [gpay, phonePe, paytm, generic, broad];
   for (const results of allResults) {
     if (results.length > rawTxns.length) {
       rawTxns = results;

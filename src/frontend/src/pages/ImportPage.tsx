@@ -29,11 +29,11 @@ const APP_GUIDES = [
     app: "Paytm",
     emoji: "🔵",
     steps: [
-      'Open Paytm and go to "Passbook"',
-      "Tap the download icon at the top",
-      'Select your date range and tap "Download Statement"',
-      "Choose PDF format and download",
-      "Upload the downloaded PDF here",
+      'Open Paytm app and tap "Passbook" at the bottom',
+      "Tap the three-dot menu (⋮) or the download icon at the top right",
+      'Select "Download Statement" or "Transaction History"',
+      "Choose your date range and select PDF as the format",
+      "The PDF will download directly to your phone — upload it here",
     ],
   },
 ];
